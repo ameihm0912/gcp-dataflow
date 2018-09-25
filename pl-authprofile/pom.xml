@@ -11,12 +11,20 @@
         <groupId>com.mozilla.secops</groupId>
 	<version>0.1.1</version>
     </parent>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-core</artifactId>
+                <version>1.12.0</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
+            <groupId>org.apache.beam</groupId>
+            <artifactId>beam-runners-google-cloud-dataflow-java</artifactId>
+            <version>2.6.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.beam</groupId>
@@ -32,6 +40,12 @@
             <groupId>com.mozilla.secops</groupId>
             <artifactId>state</artifactId>
             <version>0.1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.datatype</groupId>
@@ -80,6 +94,58 @@
                                 <argument>--inputFile=${basedir}/src/test/resources/input1.txt</argument>
                                 <argument>--specResourcePath=/userspec1.json</argument>
                                 <argument>--memcachedHost=host.docker.internal</argument>
+                            </arguments>
+                        </configuration>
+                    </plugin>
+                </plugins>
+	    </build>
+        </profile>
+    	<profile>
+            <id>dataflow-runner1</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.beam</groupId>
+                    <artifactId>beam-runners-google-cloud-dataflow-java</artifactId>
+                    <version>2.6.0</version>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+	    <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-jar-plugin</artifactId>
+                        <version>3.1.0</version>
+                        <configuration>
+                            <archive>
+                                <manifest>
+                                    <addClasspath>true</addClasspath>
+                                    <classpathPrefix>lib/</classpathPrefix>
+                                    <mainClass>com.mozilla.secops.AuthProfile</mainClass>
+                                </manifest>
+                            </archive>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>1.6.0</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <mainClass>com.mozilla.secops.AuthProfile</mainClass>
+                            <arguments>
+                                <argument>--inputFile=${basedir}/src/test/resources/input1.txt</argument>
+                                <argument>--specResourcePath=/userspec1.json</argument>
+                                <argument>--memcachedHost=host.docker.internal</argument>
+                                <argument>--project=00</argument>
+                                <argument>--runner=DataflowRunner</argument>
+                                <argument>--gcpTempLocation=V/pipeline-staging/</argument>
                             </arguments>
                         </configuration>
                     </plugin>

@@ -199,7 +199,7 @@ public class AuthProfile {
         final Logger log = LoggerFactory.getLogger(AuthProfile.class);
         UserSpec spec;
         log.info("Initializing pipeline");
-        Pipeline p = Pipeline.create();
+        Pipeline p = Pipeline.create(options);
 
         if (options.getSpecResourcePath() != null) {
             spec = new UserSpec(UserSpec.class.getResourceAsStream(options.getSpecResourcePath()));

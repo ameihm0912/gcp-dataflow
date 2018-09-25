@@ -26,12 +26,12 @@
         <dependency>
             <groupId>com.google.cloud</groupId>
             <artifactId>google-cloud-logging</artifactId>
-	    <version>1.44.0</version>
+            <version>1.45.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.apis</groupId>
             <artifactId>google-api-services-logging</artifactId>
-	    <version>v2-rev603-1.25.0</version>
+            <version>v2-rev603-1.25.0</version>
         </dependency>
     </dependencies>
 </project>
