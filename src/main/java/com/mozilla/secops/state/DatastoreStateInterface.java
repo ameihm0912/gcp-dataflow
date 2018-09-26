@@ -1,4 +1,4 @@
-package com.mozilla.secops;
+package com.mozilla.secops.state;
 
 import com.google.cloud.datastore.Datastore;
 import com.google.cloud.datastore.DatastoreOptions;

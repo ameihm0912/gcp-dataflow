@@ -1,4 +1,4 @@
-package com.mozilla.secops;
+package com.mozilla.secops.events;
 
 import java.io.Serializable;
 

@@ -1,4 +1,4 @@
-package com.mozilla.secops;
+package com.mozilla.secops.state;
 
 import net.spy.memcached.MemcachedClient;
 
@@ -22,7 +22,7 @@ public class MemcachedStateInterface implements StateInterface {
         memclient.shutdown();
     }
 
-    MemcachedStateInterface(String host) throws IOException {
+    public MemcachedStateInterface(String host) throws IOException {
         memclient = new MemcachedClient(new InetSocketAddress(host, 11211));
     }
 }

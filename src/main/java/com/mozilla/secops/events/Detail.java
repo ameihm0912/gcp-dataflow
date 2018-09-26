@@ -1,4 +1,4 @@
-package com.mozilla.secops;
+package com.mozilla.secops.events;
 
 public abstract class Detail<T extends Detail> {
     public enum Type {

@@ -23,12 +23,13 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 
-import com.mozilla.secops.GenericEvent;
-import com.mozilla.secops.Detail;
-import com.mozilla.secops.EventProcessor;
-import com.mozilla.secops.AuthDetail;
-import com.mozilla.secops.State;
-import com.mozilla.secops.MemcachedStateInterface;
+import com.mozilla.secops.events.GenericEvent;
+import com.mozilla.secops.events.Detail;
+import com.mozilla.secops.events.GenericDetail;
+import com.mozilla.secops.events.AuthDetail;
+import com.mozilla.secops.events.EventProcessor;
+import com.mozilla.secops.state.State;
+import com.mozilla.secops.state.MemcachedStateInterface;
 
 import java.io.IOException;
 import java.lang.IllegalArgumentException;

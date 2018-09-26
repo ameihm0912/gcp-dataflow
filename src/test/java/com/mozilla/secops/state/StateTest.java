@@ -1,4 +1,4 @@
-package com.mozilla.secops;
+package com.mozilla.secops.state;
 
 import org.junit.rules.ExpectedException;
 import static org.junit.Assert.assertEquals;

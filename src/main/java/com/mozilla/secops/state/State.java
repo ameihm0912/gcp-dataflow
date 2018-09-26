@@ -1,4 +1,4 @@
-package com.mozilla.secops;
+package com.mozilla.secops.state;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
@@ -10,7 +10,7 @@ import java.io.IOException;
 public class State {
     private StateInterface si;
 
-    State(StateInterface in) {
+    public State(StateInterface in) {
         si = in;
     }
 

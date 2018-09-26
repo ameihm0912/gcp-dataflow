@@ -1,4 +1,4 @@
-package com.mozilla.secops;
+package com.mozilla.secops.events;
 
 import com.google.api.services.logging.v2.model.LogEntry;
 

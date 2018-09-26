@@ -1,4 +1,4 @@
-package com.mozilla.secops;
+package com.mozilla.secops.events;
 
 import com.google.api.client.json.JsonParser;
 import com.google.api.client.json.jackson2.JacksonFactory;
@@ -17,7 +17,7 @@ public class EventProcessor implements Serializable {
     private Pattern syslogRePattern;
     private Pattern authSSHRePattern;
 
-    EventProcessor() {
+    public EventProcessor() {
         syslogRePattern = Pattern.compile(syslogRe);
         authSSHRePattern = Pattern.compile(authSSHRe);
     }
