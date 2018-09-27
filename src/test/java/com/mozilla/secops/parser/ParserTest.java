@@ -58,5 +58,10 @@ public class ParserTest {
         assertEquals("riker", o.getUser());
         assertEquals("publickey", o.getAuthMethod());
         assertEquals("127.0.0.1", o.getSourceAddress());
+        Normalized n = e.getNormalized();
+        assertNotNull(n);
+        assertEquals(Normalized.Type.AUTH, n.getType());
+        assertEquals("riker", n.getSubjectUser());
+        assertEquals("127.0.0.1", n.getSourceAddress());
     }
 }

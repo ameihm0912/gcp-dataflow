@@ -10,9 +10,11 @@ public class Event implements Serializable {
     private Payload<? extends Payload> payload;
     private UUID eventId;
     private DateTime timestamp;
+    private Normalized normalized;
 
     Event() {
         eventId = UUID.randomUUID();
+        normalized = new Normalized();
 
         // Default the event timestamp to creation time
         timestamp = new DateTime(DateTimeZone.UTC);
@@ -43,5 +45,9 @@ public class Event implements Serializable {
 
     public DateTime getTimestamp() {
         return timestamp;
+    }
+
+    public Normalized getNormalized() {
+        return normalized;
     }
 }

@@ -29,7 +29,7 @@ public class OpenSSH extends Payload implements Serializable {
         pattRe = Pattern.compile(matchRe);
     }
 
-    public OpenSSH(String input) {
+    public OpenSSH(String input, Event e) {
         pattAuthAcceptedRe = Pattern.compile(authAcceptedRe);
 
         setType(Payload.PayloadType.OPENSSH);
@@ -39,6 +39,10 @@ public class OpenSSH extends Payload implements Serializable {
             authMethod = mat.group(1);
             user = mat.group(2);
             sourceAddress = mat.group(3);
+            Normalized n = e.getNormalized();
+            n.setType(Normalized.Type.AUTH);
+            n.setSubjectUser(user);
+            n.setSourceAddress(sourceAddress);
         }
     }
 

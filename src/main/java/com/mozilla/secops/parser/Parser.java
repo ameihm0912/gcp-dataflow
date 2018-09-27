@@ -42,7 +42,7 @@ public class Parser {
             }
             Class cls = p.getClass();
             try {
-                e.setPayload((Payload)cls.getConstructor(String.class).newInstance(input));
+                e.setPayload((Payload)cls.getConstructor(String.class, Event.class).newInstance(input, e));
             } catch (NoSuchMethodException exc) {
             } catch (InstantiationException exc) {
             } catch (IllegalAccessException exc) {

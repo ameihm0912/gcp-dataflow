@@ -13,7 +13,7 @@ public class Raw extends Payload implements Serializable {
     public Raw() {
     }
 
-    public Raw(String input) {
+    public Raw(String input, Event e) {
         setType(Payload.PayloadType.RAW);
         raw = input;
     }
