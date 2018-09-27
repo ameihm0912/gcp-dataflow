@@ -3,9 +3,10 @@ package com.mozilla.secops.parser;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
+import java.io.Serializable;
 import java.util.UUID;
 
-public class Event {
+public class Event implements Serializable {
     private Payload<? extends Payload> payload;
     private UUID eventId;
     private DateTime timestamp;
@@ -15,6 +16,12 @@ public class Event {
 
         // Default the event timestamp to creation time
         timestamp = new DateTime(DateTimeZone.UTC);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        Event t = (Event)o;
+        return getEventId().equals(t.getEventId());
     }
 
     public void setPayload(Payload<?> p) {

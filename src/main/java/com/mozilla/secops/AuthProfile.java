@@ -23,11 +23,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 
-import com.mozilla.secops.events.GenericEvent;
-import com.mozilla.secops.events.Detail;
-import com.mozilla.secops.events.GenericDetail;
-import com.mozilla.secops.events.AuthDetail;
-import com.mozilla.secops.events.EventProcessor;
+import com.mozilla.secops.parser.Event;
+import com.mozilla.secops.parser.Payload;
+import com.mozilla.secops.parser.OpenSSH;
+import com.mozilla.secops.parser.Parser;
 import com.mozilla.secops.state.State;
 import com.mozilla.secops.state.MemcachedStateInterface;
 
@@ -104,24 +103,28 @@ class StateModel {
     }
 }
 
-class ParseFn extends DoFn<String,KV<String,GenericEvent>> {
-    private EventProcessor ep;
+class ParseFn extends DoFn<String,KV<String,Event>> {
+    private Parser ep;
 
     ParseFn() {
-        ep = new EventProcessor();
+    }
+
+    @Setup
+    public void Setup() {
+        ep = new Parser();
     }
 
     @ProcessElement
     public void processElement(ProcessContext c) {
-        GenericEvent e = ep.parse(c.element());
-        if (e.getDetailType() == GenericDetail.Type.AUTH) {
-            AuthDetail ad = e.getDetail();
-            c.output(KV.of(ad.getUser(), e));
+        Event e = ep.parse(c.element());
+        if (e.getPayloadType() == Payload.PayloadType.OPENSSH) {
+            OpenSSH o = e.getPayload();
+            c.output(KV.of(o.getUser(), e));
         }
     }
 }
 
-class AnalyzeFn extends DoFn<KV<String,Iterable<GenericEvent>>,String> {
+class AnalyzeFn extends DoFn<KV<String,Iterable<Event>>,String> {
     private final Logger log;
     private State state;
     private Boolean initialized;
@@ -151,11 +154,11 @@ class AnalyzeFn extends DoFn<KV<String,Iterable<GenericEvent>>,String> {
 
     @ProcessElement
     public void processElement(ProcessContext c) throws IOException {
-        Iterable<GenericEvent> events = c.element().getValue();
+        Iterable<Event> events = c.element().getValue();
         String u = c.element().getKey();
-        for (GenericEvent e : events) {
-            AuthDetail ad = e.getDetail();
-            String address = ad.getSourceAddress();
+        for (Event e : events) {
+            OpenSSH o = e.getPayload();
+            String address = o.getSourceAddress();
             StateModel sm = null;
 
             Boolean willCreate = false;
@@ -216,7 +219,7 @@ public class AuthProfile {
         }
 
         input.apply(ParDo.of(new ParseFn()))
-            .apply(GroupByKey.<String, GenericEvent>create())
+            .apply(GroupByKey.<String, Event>create())
             .apply(ParDo.of(new AnalyzeFn(options.getMemcachedHost())));
 
         p.run().waitUntilFinish();

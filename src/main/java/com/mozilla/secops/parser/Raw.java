@@ -1,6 +1,8 @@
 package com.mozilla.secops.parser;
 
-public class Raw extends Payload {
+import java.io.Serializable;
+
+public class Raw extends Payload implements Serializable {
     private String raw;
 
     @Override

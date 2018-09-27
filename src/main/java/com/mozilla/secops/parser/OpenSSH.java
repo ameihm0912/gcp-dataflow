@@ -1,9 +1,10 @@
 package com.mozilla.secops.parser;
 
+import java.io.Serializable;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
-public class OpenSSH extends Payload {
+public class OpenSSH extends Payload implements Serializable {
     private final String matchRe = "^\\S{3} \\d{2} [\\d:]+ \\S+ \\S*sshd\\[\\d+\\]: .+";
     private Pattern pattRe;
 
