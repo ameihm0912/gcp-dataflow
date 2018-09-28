@@ -2,6 +2,7 @@ package com.mozilla.secops.parser;
 
 public abstract class Payload<T extends Payload> {
     public enum PayloadType {
+        GLB,
         OPENSSH,
         RAW,
         UNKNOWN

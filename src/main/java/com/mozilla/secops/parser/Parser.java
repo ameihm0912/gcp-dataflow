@@ -5,6 +5,7 @@ import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.logging.v2.model.LogEntry;
 
 import java.util.List;
+import java.util.Map;
 import java.util.ArrayList;
 import java.io.IOException;
 
@@ -20,6 +21,10 @@ public class Parser {
         String ret = entry.getTextPayload();
         if (ret != null && !ret.isEmpty()) {
             return ret;
+        }
+        Map<String,Object> jret = entry.getJsonPayload();
+        if (jret != null) {
+            return entry.toString();
         }
         return input;
     }
@@ -55,6 +60,7 @@ public class Parser {
 
     public Parser() {
         payloads = new ArrayList<Payload>() {{
+            add(new GLB());
             add(new OpenSSH());
             add(new Raw());
         }};
