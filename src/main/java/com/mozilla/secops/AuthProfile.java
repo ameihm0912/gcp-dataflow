@@ -2,6 +2,7 @@ package com.mozilla.secops;
 
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.io.TextIO;
+import org.apache.beam.sdk.io.gcp.pubsub.PubsubIO;
 import org.apache.beam.sdk.options.Description;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
@@ -11,6 +12,12 @@ import org.apache.beam.sdk.transforms.DoFn;
 import org.apache.beam.sdk.transforms.PTransform;
 import org.apache.beam.sdk.transforms.ParDo;
 import org.apache.beam.sdk.transforms.GroupByKey;
+import org.apache.beam.sdk.transforms.windowing.FixedWindows;
+import org.apache.beam.sdk.transforms.windowing.Window;
+import org.apache.beam.sdk.transforms.windowing.TimestampCombiner;
+import org.apache.beam.sdk.transforms.windowing.AfterProcessingTime;
+import org.apache.beam.sdk.transforms.windowing.Repeatedly;
+import org.apache.beam.sdk.transforms.windowing.GlobalWindows;
 import org.apache.beam.sdk.values.PCollection;
 import org.apache.beam.sdk.values.KV;
 
@@ -22,13 +29,18 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
+import org.joda.time.Duration;
+import org.joda.time.Instant;
 
 import com.mozilla.secops.parser.Event;
+import com.mozilla.secops.parser.Normalized;
 import com.mozilla.secops.parser.Payload;
 import com.mozilla.secops.parser.OpenSSH;
 import com.mozilla.secops.parser.Parser;
 import com.mozilla.secops.state.State;
 import com.mozilla.secops.state.MemcachedStateInterface;
+import com.mozilla.secops.state.DatastoreStateInterface;
+import com.mozilla.secops.userspec.UserSpec;
 
 import java.io.IOException;
 import java.lang.IllegalArgumentException;
@@ -116,10 +128,13 @@ class ParseFn extends DoFn<String,KV<String,Event>> {
 
     @ProcessElement
     public void processElement(ProcessContext c) {
+        System.out.println(c.element());
         Event e = ep.parse(c.element());
-        if (e.getPayloadType() == Payload.PayloadType.OPENSSH) {
-            OpenSSH o = e.getPayload();
-            c.output(KV.of(o.getUser(), e));
+        Normalized n = e.getNormalized();
+        if (n.getType() == Normalized.Type.AUTH) {
+            //c.output(KV.of(n.getSubjectUser(), e));
+            System.out.println(new Instant());
+            c.outputWithTimestamp(KV.of(n.getSubjectUser(), e), new Instant());
         }
     }
 }
@@ -129,19 +144,26 @@ class AnalyzeFn extends DoFn<KV<String,Iterable<Event>>,String> {
     private State state;
     private Boolean initialized;
     private ValueProvider<String> memcachedHost;
+    private ValueProvider<String> datastoreKind;
 
-    AnalyzeFn(ValueProvider<String> mch) {
+    AnalyzeFn(ValueProvider<String> mch, ValueProvider<String> dsk) {
         log = LoggerFactory.getLogger(AnalyzeFn.class);
         memcachedHost = mch;
+        datastoreKind = dsk;
     }
 
     @Setup
     public void Setup() throws IOException, IllegalArgumentException {
-        log.info("Performing DoFn setup stage");
+        System.out.println("IN SETUP");
         if (memcachedHost.isAccessible() && memcachedHost.get() != null) {
             String mch = memcachedHost.get();
             log.info("Initializing memcached state connection to {}", mch);
             state = new State(new MemcachedStateInterface(mch));
+        } else if (datastoreKind.isAccessible() && datastoreKind.get() != null) {
+            System.out.println("CONFIGURE DATASTORE");
+            String dsk = datastoreKind.get();
+            log.info("Initializing datastore state for {}", dsk);
+            state = new State(new DatastoreStateInterface(dsk));
         } else {
             throw new IllegalArgumentException("no state mechanism specified");
         }
@@ -154,11 +176,12 @@ class AnalyzeFn extends DoFn<KV<String,Iterable<Event>>,String> {
 
     @ProcessElement
     public void processElement(ProcessContext c) throws IOException {
+        System.out.println(c.element());
         Iterable<Event> events = c.element().getValue();
         String u = c.element().getKey();
         for (Event e : events) {
-            OpenSSH o = e.getPayload();
-            String address = o.getSourceAddress();
+            Normalized n = e.getNormalized();
+            String address = n.getSourceAddress();
             StateModel sm = null;
 
             Boolean willCreate = false;
@@ -186,43 +209,64 @@ class AnalyzeFn extends DoFn<KV<String,Iterable<Event>>,String> {
 
 public class AuthProfile {
     public interface AuthProfileOptions extends PipelineOptions {
-        @Description("Input file for direct runner")
+        @Description("Read input from file path")
         String getInputFile();
         void setInputFile(String value);
 
-        @Description("Read user specification from resource location")
-        String getSpecResourcePath();
-        void setSpecResourcePath(String value);
+        @Description("Read input from pubsub topic")
+        String getInputPubsub();
+        void setInputPubsub(String value);
 
-        @Description("Enable memcached state using host")
+        @Description("Read user specification from file path")
+        String getUserSpecPath();
+        void setUserSpecPath(String value);
+
+        @Description("Use memcached host for state")
         ValueProvider<String> getMemcachedHost();
         void setMemcachedHost(ValueProvider<String> value);
+
+        @Description("Use datastore storage with kind")
+        ValueProvider<String> getDatastoreKind();
+        void setDatastoreKind(ValueProvider<String> value);
     }
 
     static void runAuthProfile(AuthProfileOptions options) throws Exception {
         final Logger log = LoggerFactory.getLogger(AuthProfile.class);
-        UserSpec spec;
         log.info("Initializing pipeline");
         Pipeline p = Pipeline.create(options);
 
-        if (options.getSpecResourcePath() != null) {
-            spec = new UserSpec(UserSpec.class.getResourceAsStream(options.getSpecResourcePath()));
-        } else {
-            throw new IllegalArgumentException("no user specification provided");
-        }
-
         PCollection<String> input;
         if (options.getInputFile() != null) {
-            input = p.apply("ReadInput", TextIO.read().from(options.getInputFile()));
+            input = p.apply(TextIO.read().from(options.getInputFile()));
+        } else if (options.getInputPubsub() != null) {
+            input = p.apply(PubsubIO.readStrings()
+                    .fromTopic(options.getInputPubsub()));
         } else {
             throw new IllegalArgumentException("no valid input specified");
         }
 
-        input.apply(ParDo.of(new ParseFn()))
-            .apply(GroupByKey.<String, Event>create())
-            .apply(ParDo.of(new AnalyzeFn(options.getMemcachedHost())));
+        PCollection<KV<String,Iterable<Event>>> mevent = input.apply(ParDo.of(new ParseFn()))
+            .apply(Window.<KV<String,Event>>into(new GlobalWindows())
+                    .triggering(Repeatedly
+                        .forever(AfterProcessingTime
+                            .pastFirstElementInPane()
+                            .plusDelayOf(Duration.standardSeconds(30))))
+                    .withAllowedLateness(Duration.standardSeconds(30)).discardingFiredPanes())
+            .apply(GroupByKey.<String,Event>create());
 
-        p.run().waitUntilFinish();
+        System.out.println("ANALYZE");
+        /*if (options.getMemcachedHost() != null) {
+            System.out.println("USING MEMCACHED");
+            mevent.apply(ParDo.of(new AnalyzeFn(options.getMemcachedHost(), options.getDatastoreKind())));*/
+        if (options.getDatastoreKind() != null) {
+            System.out.println("USING DATASTORE");
+            mevent.apply(ParDo.of(new AnalyzeFn(options.getMemcachedHost(), options.getDatastoreKind())));
+        } else {
+            throw new IllegalArgumentException("no valid state method specified");
+        }
+
+        //p.run().waitUntilFinish();
+        p.run();
     }
 
     public static void main(String[] args) throws Exception {

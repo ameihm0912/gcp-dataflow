@@ -46,12 +46,12 @@ public class DatastoreStateInterface implements StateInterface {
     public void done() {
     }
 
-    DatastoreStateInterface(String kind) {
+    public DatastoreStateInterface(String kind) {
         datastore = DatastoreOptions.getDefaultInstance().getService();
         keyFactory = datastore.newKeyFactory().setKind(kind);
     }
 
-    DatastoreStateInterface(String kind, String sfpath) throws IOException {
+    public DatastoreStateInterface(String kind, String sfpath) throws IOException {
         datastore = DatastoreOptions.newBuilder().setCredentials(
                 ServiceAccountCredentials.fromStream(new FileInputStream(sfpath)))
             .build().getService();

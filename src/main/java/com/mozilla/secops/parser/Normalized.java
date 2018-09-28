@@ -3,7 +3,7 @@ package com.mozilla.secops.parser;
 import java.io.Serializable;
 
 public class Normalized implements Serializable {
-    enum Type {
+    public enum Type {
         AUTH
     }
 
